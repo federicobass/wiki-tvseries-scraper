@@ -36,12 +36,21 @@ In this showcase I demonstrate how to scrape episodes' plot and title of the TV 
 ``` python
 tv_series_name = "How_I_Met_Your_Mother"
 wiki_episodes_list = [ ]
+<<<<<<< HEAD
 
 wiki_season_list = get_wiki_seasons_list(tv_series_name)
 
 for season_number, season in tqdm(enumerate(wiki_season_list, 1), desc="Scraping", total=len(wiki_season_list)):
     wiki_episodes_list.append(get_episodes_data(season, season_number))
 
+=======
+
+wiki_season_list = get_wiki_seasons_list(tv_series_name)
+
+for season_number, season in tqdm(enumerate(wiki_season_list, 1), desc="Scraping", total=len(wiki_season_list)):
+    wiki_episodes_list.append(get_episodes_data(season, season_number))
+
+>>>>>>> main
 build_output_csv(tv_series_name, wiki_episodes_list)
 ```
 
@@ -52,6 +61,10 @@ The output will be a CSV file with the following structure (also explicited in t
 | `season` | _Season number of the TV series_ |
 | `title` | _Title of the episode_ |
 | `plot` | _Plot of the episode_ |
+<<<<<<< HEAD
+=======
+|
+>>>>>>> main
 
 ## Known Issues
 
