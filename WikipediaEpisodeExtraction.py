@@ -4,6 +4,9 @@
 # https://www.mediawiki.org/wiki/API:Parsing_wikitext
 #
 
+from tqdm import tqdm
+
+import csv
 import os
 import re
 import requests
@@ -14,7 +17,7 @@ section_typo_list = ["episodes", "season synopsis", "season synopses", "series o
 wiki_requests_session = requests.Session()
 
 # Parse Wikipedia page's sections list in JSON format.
-def get_wiki_page_sections(title):
+def get_wiki_seasons_list(title):
     wiki_season_list = []
     wiki_section_index = "-1"
 
@@ -27,7 +30,7 @@ def get_wiki_page_sections(title):
     if "error" in wiki_scrapped_data:
         print(f"ERROR: {wiki_scrapped_data['error']['info']}")
         sys.exit(os.EX_DATAERR)
-    
+
     # Loop through Contents table entries to find episodes sub-entries
     for entry in wiki_scrapped_data["parse"]["sections"]:
         # Get entry index for next GET request to find specific section by checking for specific sub-sections
@@ -64,7 +67,7 @@ def get_wiki_page_sections(title):
     return wiki_season_list
 
 # Parse episodes' title and plot from Wikipedia for each season if available. Parse it from episode list if season synopsis is unavailable.
-def get_episodes_data(season_entry):
+def get_episodes_data(season_entry, season_number):
     wiki_episodes_list = []
     wiki_section_index = "-1"
 
@@ -84,12 +87,12 @@ def get_episodes_data(season_entry):
     episode_plot_pattern = re.compile(r"\| ?ShortSummary *= *(.*?) *\n")
     episode_titles_list = episode_title_pattern.findall(wiki_scrapped_links["parse"]["wikitext"]["*"])
     episode_plots_list = episode_plot_pattern.findall(wiki_scrapped_links["parse"]["wikitext"]["*"])
-    
+
     # Compile regular expression for plots' text pre-processing
     regex_clean_hyperlinks_pattern_v1 = re.compile(r"\[\[([^|\]]*)\]\]")
     regex_clean_hyperlinks_pattern_v2 = re.compile(r"\[\[(.*)\|(.*)\]\]")
     regex_clean_tags_pattern = re.compile(r"(.*?)(<.*>)?")
-    
+
     # Create a dict containing each episode's title and plot (pre-processed) and append it to episodes list
     for i in range(0, len(episode_titles_list)):
         # Pre-process strings by cleaning them from useless characters (Wikipedia formatting)
@@ -99,11 +102,49 @@ def get_episodes_data(season_entry):
         episode_plot = re.sub(regex_clean_hyperlinks_pattern_v2, r"\2", episode_plot)
         episode_plot = re.sub(regex_clean_tags_pattern, r"\1", episode_plot)
         episode_plot = bytes(episode_plot, "utf-8").decode().replace("''", "\"").strip()
-        
+
         # Add each episode to season's dictionary
         wiki_episodes_list.append({
+            "season": season_number,
             "title": episode_title,
             "plot": episode_plot
         })
-    
+
     return wiki_episodes_list
+
+# Write CSV file with generated output.
+def build_output_csv(series_name, full_episodes_list):
+    fieldnames = [ "season", "title", "plot" ]
+    filename = f"{series_name.lower()}.csv"
+
+    # Check for episodes.csv presence and ask to overwrite if it exists
+    if os.path.exists("filename"):
+        print("File 'episodes.csv' already exists. Overwrite? (Y/n)")
+
+        user_input = input().strip().lower()
+        # User decided to NOT overwrite the file: ask it to be renamed
+        if user_input == "n":
+            print("Do you wish to rename the new file? (Y/n)")
+
+            user_input = input().strip().lower()
+            # User decided to rename the file: assign new name
+            if user_input == "y":
+                filename = input("Enter new filename: ").strip()
+
+    # Open CSV file (or create it if not present)
+    with open(filename, "w") as csvfile:
+        csv_writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        csv_writer.writeheader()
+
+        # Loop through each episode in each season and build a dictionary for CSV DictWriter
+        for season in tqdm(full_episodes_list, desc="Exporting to CSV", total=len(full_episodes_list)):
+            for episode in season:
+                csv_writer.writerow({
+                    "season": episode["season"],
+                    "title": episode["title"],
+                    "plot": episode["plot"]
+                })
+
+        csvfile.flush()
+
+    return
