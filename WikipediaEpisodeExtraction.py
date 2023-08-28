@@ -8,6 +8,7 @@ from tqdm import tqdm
 
 import csv
 import os
+import pandas as pd
 import re
 import requests
 import sys
@@ -112,39 +113,23 @@ def get_episodes_data(season_entry, season_number):
 
     return wiki_episodes_list
 
-# Write CSV file with generated output.
-def build_output_csv(series_name, full_episodes_list):
-    fieldnames = [ "season", "title", "plot" ]
-    filename = f"{series_name.lower()}.csv"
+# Write output file (Excel or CSV) with generated output.
+def generate_output_file(series_name, full_episodes_list, format):
+    df = pd.DataFrame(columns=[ "season", "title", "plot" ], index=None)
+    filename = f"{series_name.lower()}.{format}"
 
-    # Check for episodes.csv presence and ask to overwrite if it exists
-    if os.path.exists("filename"):
-        print("File 'episodes.csv' already exists. Overwrite? (Y/n)")
+    # Remove output file if already exisisting
+    if os.path.exists(filename):
+        os.remove(filename)
 
-        user_input = input().strip().lower()
-        # User decided to NOT overwrite the file: ask it to be renamed
-        if user_input == "n":
-            print("Do you wish to rename the new file? (Y/n)")
+    # Create Pandas Dataframe containing data about the TV series' episodes for each season
+    for season in tqdm(full_episodes_list, desc="Exporting to file", total=len(full_episodes_list)):
+        for episode in season:
+            df = pd.concat([df, pd.DataFrame([episode])], ignore_index=True)
 
-            user_input = input().strip().lower()
-            # User decided to rename the file: assign new name
-            if user_input == "y":
-                filename = input("Enter new filename: ").strip()
-
-    # Open CSV file (or create it if not present)
-    with open(filename, "w") as csvfile:
-        csv_writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        csv_writer.writeheader()
-
-        # Loop through each episode in each season and build a dictionary for CSV DictWriter
-        for season in tqdm(full_episodes_list, desc="Exporting to CSV", total=len(full_episodes_list)):
-            for episode in season:
-                csv_writer.writerow({
-                    "season": episode["season"],
-                    "title": episode["title"],
-                    "plot": episode["plot"]
-                })
-
-        csvfile.flush()
+    if format == "csv":
+        df.to_csv(filename, index=False)
+    elif format == "xlsx":
+        df.to_excel(filename, sheet_name=series_name, index=False)
 
     return
