@@ -67,10 +67,13 @@ The output will be either a CSV file or a XLSX _(Excel)_ file with the following
 
 Each function gives the following output:
 
-- `get_tvseries_genres`: returns a _List_ of TV series' genres (**PLEASE NOTE**: this function is **not** incorporated in the output files, as the genres will be repeated for each entry in the final output file; use the function as you wish)
+- `get_tvseries_season_episodes_number`: returns a _List_ of TV series' number of seasons and episodes (*)
+- `get_tvseries_genres`: returns a _List_ of TV series' genres (*)
 - `get_wiki_seasons_list`: returns a _List_ of TV series' seasons that will be given as input to the function _`get_episodes_data`_ for the next step
 - `get_episodes_data`: returns a _List_ of _Dicts_, where each _Dict_ contains the data of a single episode for a (single) given season
 - `generate_output_file`: generates a file containing freshly scraped data for a single TV series
+
+(*): **PLEASE NOTE**: this function is **not** incorporated in the output files. Use the function as you wish.
 
 ## Known Issues
 
@@ -83,5 +86,5 @@ Always check for a TV series completeness on its Wikipedia page(s) before extrac
 As for the project improvement, I plan to add the following features:
 
 - [x] Add different output types such as CSV
-- [ ] Add more categories to parse (such as n. of seasons, n. of episodes, genre, etc.)
+- [x] Add more categories to parse (such as n. of seasons, n. of episodes, genre, etc.)
 - [ ] Find a way to search TV series without needing to input the exact Wikipedia name

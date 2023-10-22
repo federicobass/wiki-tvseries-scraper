@@ -16,9 +16,34 @@ import sys
 section_typo_list = ["episodes", "season synopsis", "season synopses", "series overview"]
 wiki_requests_session = requests.Session()
 
+# Parse TV series' number of seasons and episodes from its main Wikipedia page.
+def get_tvseries_season_episodes_number(title):
+    wiki_numbers_dict = {}
+
+    # Clean title left and right from whitespaces and substitute whitespaces in string with underscores for compatibility
+    title = title.strip().replace(" ", "_")
+    # Retrieve main TV series' page in 'wikitext' format and parse it in JSON format
+    wiki_scrapped_data = wiki_requests_session.get(f"https://en.wikipedia.org/w/api.php?action=parse&page={title}&prop=wikitext&format=json").json()
+
+    # Handle inexistent Wikipedia input page
+    if "error" in wiki_scrapped_data:
+        print(f"ERROR: {wiki_scrapped_data['error']['info']}")
+        sys.exit(os.EX_DATAERR)
+
+    # Compile regular expressions for seasons' and episodes' numbers extraction from JSON
+    regex_seasons_num_pattern = re.compile(r"\| *num_seasons *= *([0-9]+?).\| +", re.DOTALL)
+    regex_episodes_num_pattern = re.compile(r"\| *num_episodes *= *(?:.*?<onlyinclude>)?([0-9]+?)(?:<\/onlyinclude>)?.\| +", re.DOTALL)
+
+    # Parse seasons' and episodes' numbers from JSON using regular expressions
+    wiki_numbers_dict["seasons"] = regex_seasons_num_pattern.findall(wiki_scrapped_data["parse"]["wikitext"]["*"])[0].strip()
+    wiki_numbers_dict["episodes"] = regex_episodes_num_pattern.findall(wiki_scrapped_data["parse"]["wikitext"]["*"])[0].strip()
+
+    return wiki_numbers_dict
+
 # Parse TV series' genres from its main Wikipedia page.
 def get_tvseries_genres(title):
-    wiki_genres_list = []
+    wiki_genres_list_v1 = []
+    wiki_genres_list_v2 = []
 
     # Clean title left and right from whitespaces and substitute whitespaces in string with underscores for compatibility
     title = title.strip().replace(" ", "_")
@@ -32,18 +57,26 @@ def get_tvseries_genres(title):
 
     # Compile regular expressions for genres' extraction from JSON and text pre-processing
     regex_genres_pattern = re.compile(r"\| +genre *= (.*?)\| +", re.DOTALL)
-    regex_clean_hyperlinks_pattern = re.compile(r"\[\[([A-Za-z0-9 ]*?)\]\]")
+    regex_clean_hyperlinks_pattern_v1 = re.compile(r"\[\[([A-Za-z0-9 ]*?)\]\]")
+    regex_clean_hyperlinks_pattern_v2 = re.compile(r"\n* ?\[\[(?:[A-Za-z ]*?\|)([A-Za-z]*?)\]\]")
+    regex_clean_references_pattern = re.compile(r"(.*?)(?:<ref>.*?<\/ref>)", re.DOTALL)
 
     # Parse genres' list from JSON using regular expressions
     regex_genres_string = regex_genres_pattern.findall(wiki_scrapped_data["parse"]["wikitext"]["*"])[0].replace('\n', '').strip()
 
-    # Pre-process strings by cleaning them from useless characters (Wikipedia formatting)
-    if regex_clean_hyperlinks_pattern.search(regex_genres_string):
-        wiki_genres_list = re.findall(regex_clean_hyperlinks_pattern, regex_genres_string)
-    else:
-        wiki_genres_list = regex_genres_string.strip().split(",")
+    # Remove references from Wikipedia genres' list
+    if regex_clean_references_pattern.search(regex_genres_string):
+        regex_genres_string = re.sub(regex_clean_references_pattern, r"\1", regex_genres_string)
 
-    return wiki_genres_list
+    # Pre-process strings by cleaning them from useless characters (Wikipedia formatting)
+    if regex_clean_hyperlinks_pattern_v2.search(regex_genres_string):
+        wiki_genres_list_v2 = re.findall(regex_clean_hyperlinks_pattern_v2, regex_genres_string)
+    if regex_clean_hyperlinks_pattern_v1.search(regex_genres_string):
+        wiki_genres_list_v1 = re.findall(regex_clean_hyperlinks_pattern_v1, regex_genres_string)
+    else:
+        wiki_genres_list_v1 = regex_genres_string.strip().split(",")
+
+    return wiki_genres_list_v1 + wiki_genres_list_v2
 
 # Parse Wikipedia page's sections list in JSON format.
 def get_wiki_seasons_list(title):
