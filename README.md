@@ -8,12 +8,18 @@ In the future, I plan to implement more features which are better described in s
 
 ## Requirements
 
-The script uses a progress bar known as `tqdm`, in order to provide feedback of elapsed time to the user., and the library `pandas` for data handling. \
+The script uses a progress bar known as `tqdm`, in order to provide feedback of elapsed time to the user, and the library `pandas` for data handling. \
 If any Python module is not installed on your current machine, simply install it via the following terminal command:
 
+Using `pip`:
 ``` terminal
 pip install pandas
 pip install tqdm
+```
+Using `apt`:
+``` terminal
+sudo apt install python3-pandas
+sudo apt install python3-tqdm
 ```
 
 ## Usage / Examples
@@ -29,7 +35,7 @@ For example:
 | `How I Met Your Mother` | How I Met Your Mother | How_I_Met_Your_Mother |
 | `Superstore` | Superstore (TV series) | Superstore_(TV_series) |
 
-As shown, some TV series titles have the suffix `(TV Series)` according to their title in the Wikipedia pages.
+As shown, some TV series titles have the suffix `(TV Series)` according to their title in the Wikipedia pages and their URL.
 
 ### Usage Showcase
 
@@ -51,7 +57,7 @@ generate_output_file(tv_series_name, wiki_episodes_list, "xlsx")
 
 The output will be either a CSV file or a XLSX _(Excel)_ file with the following structure:
 
-| CSV Field | Description |
+| Field | Description |
 | --- | --- |
 | `season` | _Season number of the TV series_ |
 | `title` | _Title of the episode_ |
@@ -61,6 +67,7 @@ The output will be either a CSV file or a XLSX _(Excel)_ file with the following
 
 Each function gives the following output:
 
+- `get_tvseries_genres`: returns a _List_ of TV series' genres (**PLEASE NOTE**: this function is **not** incorporated in the output files, as the genres will be repeated for each entry in the final output file; use the function as you wish)
 - `get_wiki_seasons_list`: returns a _List_ of TV series' seasons that will be given as input to the function _`get_episodes_data`_ for the next step
 - `get_episodes_data`: returns a _List_ of _Dicts_, where each _Dict_ contains the data of a single episode for a (single) given season
 - `generate_output_file`: generates a file containing freshly scraped data for a single TV series

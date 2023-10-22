@@ -6,7 +6,6 @@
 
 from tqdm import tqdm
 
-import csv
 import os
 import pandas as pd
 import re
@@ -16,6 +15,35 @@ import sys
 
 section_typo_list = ["episodes", "season synopsis", "season synopses", "series overview"]
 wiki_requests_session = requests.Session()
+
+# Parse TV series' genres from its main Wikipedia page.
+def get_tvseries_genres(title):
+    wiki_genres_list = []
+
+    # Clean title left and right from whitespaces and substitute whitespaces in string with underscores for compatibility
+    title = title.strip().replace(" ", "_")
+    # Retrieve main TV series' page in 'wikitext' format and parse it in JSON format
+    wiki_scrapped_data = wiki_requests_session.get(f"https://en.wikipedia.org/w/api.php?action=parse&page={title}&prop=wikitext&format=json").json()
+
+    # Handle inexistent Wikipedia input page
+    if "error" in wiki_scrapped_data:
+        print(f"ERROR: {wiki_scrapped_data['error']['info']}")
+        sys.exit(os.EX_DATAERR)
+
+    # Compile regular expressions for genres' extraction from JSON and text pre-processing
+    regex_genres_pattern = re.compile(r"\| +genre *= (.*?)\| +", re.DOTALL)
+    regex_clean_hyperlinks_pattern = re.compile(r"\[\[([A-Za-z0-9 ]*?)\]\]")
+
+    # Parse genres' list from JSON using regular expressions
+    regex_genres_string = regex_genres_pattern.findall(wiki_scrapped_data["parse"]["wikitext"]["*"])[0].replace('\n', '').strip()
+
+    # Pre-process strings by cleaning them from useless characters (Wikipedia formatting)
+    if regex_clean_hyperlinks_pattern.search(regex_genres_string):
+        wiki_genres_list = re.findall(regex_clean_hyperlinks_pattern, regex_genres_string)
+    else:
+        wiki_genres_list = regex_genres_string.strip().split(",")
+
+    return wiki_genres_list
 
 # Parse Wikipedia page's sections list in JSON format.
 def get_wiki_seasons_list(title):
